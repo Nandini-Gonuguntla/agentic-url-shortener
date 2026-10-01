@@ -1,0 +1,9 @@
+{
+  "rationale": "Build bottom-up so every task compiles on its own: the domain result type and service first, then the HTTP layer on top, then tests that exercise both layers. The service has no web dependency, so it can be unit tested in isolation.",
+  "tasks": [
+    {"id": "T1", "title": "Bulk domain service", "description": "Create BulkItemResult (sealed: Created, Rejected) and BulkLinkService that calls LinkService.create per item and maps domain exceptions to problem types.", "kind": "CODE", "dependsOn": [], "files": ["src/main/java/com/agentic/shortener/service/BulkItemResult.java", "src/main/java/com/agentic/shortener/service/BulkLinkService.java"], "coversCriteria": ["AC1", "AC2", "AC4"]},
+    {"id": "T2", "title": "Bulk HTTP endpoint", "description": "Create request/response DTOs with size validation and BulkLinkController at POST /api/v1/links/bulk.", "kind": "CODE", "dependsOn": ["T1"], "files": ["src/main/java/com/agentic/shortener/api/BulkCreateLinksRequest.java", "src/main/java/com/agentic/shortener/api/BulkCreateLinksResponse.java", "src/main/java/com/agentic/shortener/api/BulkLinkController.java"], "coversCriteria": ["AC1", "AC2", "AC3"]},
+    {"id": "T3", "title": "Unit tests for result mapping", "description": "BulkLinkServiceTest with a mocked LinkService.", "kind": "TEST", "dependsOn": ["T1"], "files": ["src/test/java/com/agentic/shortener/service/BulkLinkServiceTest.java"], "coversCriteria": ["AC1", "AC4"]},
+    {"id": "T4", "title": "API integration tests", "description": "BulkLinkApiIntegrationTest covering mixed batches, ordering, limits, duplicate aliases and redirects.", "kind": "TEST", "dependsOn": ["T2"], "files": ["src/test/java/com/agentic/shortener/api/BulkLinkApiIntegrationTest.java"], "coversCriteria": ["AC1", "AC2", "AC3", "AC4", "AC5"]}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "ambiguous",
+  "title": "Safer short links",
+  "type": "AMBIGUOUS",
+  "description": "A vague request. Shows ambiguity detection with blocking clarifying questions, a pause for stakeholder input, regeneration of the requirements (v2) from the answers, dynamic re-planning (a threat-model stage is inserted because the design is security sensitive), risk-based design approval and policy-driven approval of a configuration change.",
+  "requirement": "Make our short links safer for the people who click them.",
+  "scriptedAnswers": {
+    "Q1": "Malicious or deceptive destination URLs (phishing, malware)",
+    "Q2": "Reject the link at creation time with a clear error"
+  }
+}

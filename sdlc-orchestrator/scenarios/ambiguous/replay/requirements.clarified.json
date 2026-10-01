@@ -1,0 +1,52 @@
+{
+  "title": "Destination safety checks",
+  "summary": "Protect people who click short links from deceptive destinations by refusing, at creation time, URLs that point to blocklisted domains, use raw IP addresses as hosts, or embed credentials (user:password@host), which are common phishing techniques. Refusals use a dedicated problem type so clients can explain them.",
+  "changeType": "ENHANCEMENT",
+  "functionalRequirements": [
+    "Reject destinations whose host is a blocklisted domain or a subdomain of one",
+    "Reject destinations whose host is an IP address literal (IPv4, IPv6, or numeric/hex encodings)",
+    "Reject destinations containing user info (credentials) before the host",
+    "Return 422 with problem type urn:problem:unsafe-destination and a reason",
+    "Configure the blocklist and the IP-literal rule through application configuration"
+  ],
+  "nonFunctionalRequirements": [
+    "No impact on redirect latency: checks run only on creation",
+    "No network calls on the create path",
+    "Rejected URLs are not logged (they may contain credentials)"
+  ],
+  "acceptanceCriteria": [
+    {"id": "AC1", "description": "Creating a link to a blocklisted domain or any of its subdomains returns 422 urn:problem:unsafe-destination"},
+    {"id": "AC2", "description": "Destinations with IPv4, IPv6, decimal or hex IP hosts are rejected when block-ip-literals is enabled"},
+    {"id": "AC3", "description": "Destinations with embedded credentials (user:pass@host) are rejected"},
+    {"id": "AC4", "description": "The blocklist is configurable via shortener.safety.blocked-domains without code changes"},
+    {"id": "AC5", "description": "Domains that only share a suffix string (notphishing.test vs phishing.test) and ordinary URLs are not affected"}
+  ],
+  "assumptions": [
+    "Blocklist matching is by registrable domain suffix on label boundaries",
+    "Existing links are not re-validated (no retroactive blocking in this iteration)",
+    "Static configuration is sufficient until a reputation service is chosen"
+  ],
+  "outOfScope": [
+    "Warning interstitial on redirect",
+    "External URL reputation lookups",
+    "Re-scanning existing links"
+  ],
+  "ambiguities": [
+    {
+      "id": "Q1",
+      "question": "Which threat should this change address first?",
+      "options": ["Malicious or deceptive destination URLs (phishing, malware)"],
+      "recommendedOption": "Malicious or deceptive destination URLs (phishing, malware)",
+      "blocking": true,
+      "impact": "Resolved by stakeholder"
+    },
+    {
+      "id": "Q2",
+      "question": "What should happen when a destination is considered unsafe?",
+      "options": ["Reject the link at creation time with a clear error"],
+      "recommendedOption": "Reject the link at creation time with a clear error",
+      "blocking": true,
+      "impact": "Resolved by stakeholder"
+    }
+  ]
+}

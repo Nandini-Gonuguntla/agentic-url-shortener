@@ -1,0 +1,7 @@
+{
+  "summary": "Document link expiration and add a changelog entry",
+  "changes": [
+    {"path": "docs/link-expiration.md", "action": "CREATE", "content": "@file:files/docs/link-expiration.md"},
+    {"path": "CHANGELOG.md", "action": "MODIFY", "content": "@file:files/docs/CHANGELOG.md"}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "taskId": "T2",
+  "summary": "Map expiresAt on Link with an expiry predicate",
+  "changes": [
+    {"path": "src/main/java/com/agentic/shortener/domain/Link.java", "action": "MODIFY", "content": "@file:files/T2/Link.java"}
+  ],
+  "notes": "The three-argument constructor is kept so existing callers compile unchanged."
+}

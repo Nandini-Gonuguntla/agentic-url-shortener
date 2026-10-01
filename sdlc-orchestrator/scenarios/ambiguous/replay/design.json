@@ -1,0 +1,31 @@
+{
+  "overview": "Add a DestinationSafetyPolicy that runs in LinkService.create after the existing syntactic UrlValidator. It refuses (1) hosts equal to or under a configured blocked domain, matched on label boundaries, (2) IP-literal hosts including IPv6 and numeric/hex encodings that bypass naive checks, and (3) URLs with user info, which disguise the real host (https://bank.example@evil.test). Refusals raise UnsafeDestinationException, mapped to 422 urn:problem:unsafe-destination with a reason that never echoes the URL. Settings come from a new SafetyProperties record (shortener.safety.*) so operators can update the blocklist without code changes.",
+  "components": [
+    {"name": "SafetyProperties", "responsibility": "Typed, validated configuration", "files": ["src/main/java/com/agentic/shortener/config/SafetyProperties.java", "src/main/resources/application.yml"]},
+    {"name": "DestinationSafetyPolicy", "responsibility": "Blocklist, IP-literal and credential checks", "files": ["src/main/java/com/agentic/shortener/service/DestinationSafetyPolicy.java", "src/main/java/com/agentic/shortener/service/UnsafeDestinationException.java"]},
+    {"name": "Create path integration", "responsibility": "Invoke the policy and map the error", "files": ["src/main/java/com/agentic/shortener/service/LinkService.java", "src/main/java/com/agentic/shortener/api/GlobalExceptionHandler.java"]}
+  ],
+  "apiChanges": [
+    {"method": "POST", "path": "/api/v1/links", "description": "New 422 response with urn:problem:unsafe-destination", "breaking": false}
+  ],
+  "schemaChanges": [],
+  "impacts": ["SECURITY_SENSITIVE", "CONFIG_CHANGE", "PUBLIC_API_CHANGE"],
+  "decisions": [
+    {"decision": "Separate policy class instead of extending UrlValidator", "rationale": "Syntax and safety change for different reasons and have different configuration"},
+    {"decision": "Match blocked domains on label boundaries", "rationale": "Blocks login.phishing.test but not notphishing.test"},
+    {"decision": "Treat all-numeric and hex hosts as IP literals", "rationale": "http://3232235521/ and http://0xC0A80001/ are IP addresses in disguise"},
+    {"decision": "422 instead of 400", "rationale": "The request is well formed; the destination is refused by policy"},
+    {"decision": "Never echo the URL in errors or logs", "rationale": "User info may contain real credentials"}
+  ],
+  "alternatives": [
+    {"option": "Warning interstitial on redirect", "whyNotChosen": "Stakeholder chose rejection at creation; interstitial changes the redirect path and needs UI"},
+    {"option": "External reputation API (e.g. Safe Browsing)", "whyNotChosen": "Adds a network dependency and latency to create; deferred until a provider is chosen"}
+  ],
+  "risks": [
+    {"description": "Blocklist goes stale and misses new phishing domains", "likelihood": "HIGH", "impact": "MEDIUM", "mitigation": "Configurable list; follow-up to integrate a reputation feed"},
+    {"description": "Over-blocking legitimate destinations", "likelihood": "LOW", "impact": "MEDIUM", "mitigation": "Label-boundary matching and tests for lookalike suffixes"},
+    {"description": "Credentials from rejected URLs leak into logs", "likelihood": "MEDIUM", "impact": "HIGH", "mitigation": "No logging of rejected URLs; generic error messages"}
+  ],
+  "testStrategy": "Unit-test DestinationSafetyPolicy across blocked domains, subdomains, lookalike suffixes, case and trailing dots, IPv4/IPv6/decimal/hex hosts, credentials and the toggle for IP literals. Integration-test POST /api/v1/links for 422 responses and that normal URLs still return 201. The existing suite proves no regression.",
+  "rollbackPlan": "Revert the commit, or set shortener.safety.blocked-domains to an empty list and block-ip-literals to false to disable the checks without a deploy of new code."
+}

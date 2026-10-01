@@ -1,0 +1,8 @@
+{
+  "taskId": "T3",
+  "summary": "Unit tests for BulkLinkService result mapping",
+  "changes": [
+    {"path": "src/test/java/com/agentic/shortener/service/BulkLinkServiceTest.java", "action": "CREATE", "content": "@file:files/T3/BulkLinkServiceTest.java"}
+  ],
+  "notes": "LinkService is mocked so each exception path is exercised deterministically."
+}

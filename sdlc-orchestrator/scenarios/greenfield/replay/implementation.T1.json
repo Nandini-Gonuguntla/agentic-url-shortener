@@ -1,0 +1,9 @@
+{
+  "taskId": "T1",
+  "summary": "Add BulkLinkService and BulkItemResult",
+  "changes": [
+    {"path": "src/main/java/com/agentic/shortener/service/BulkItemResult.java", "action": "CREATE", "content": "@file:files/T1/BulkItemResult.java"},
+    {"path": "src/main/java/com/agentic/shortener/service/BulkLinkService.java", "action": "CREATE", "content": "@file:files/T1/BulkLinkService.java"}
+  ],
+  "notes": "Domain exceptions are mapped explicitly; unexpected exceptions propagate so they are not silently reported as item failures."
+}

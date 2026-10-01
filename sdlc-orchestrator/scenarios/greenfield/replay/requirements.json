@@ -1,0 +1,43 @@
+{
+  "title": "Bulk link creation API",
+  "summary": "Add POST /api/v1/links/bulk that creates up to 100 short links in one call. Items are processed independently: each item reports either the created link or a typed error, and the call succeeds as long as the batch itself is well formed.",
+  "changeType": "NEW_FEATURE",
+  "functionalRequirements": [
+    "Accept a JSON body with an 'items' array of {url, customAlias?} objects",
+    "Reject the whole request with 400 if 'items' is missing, empty or has more than 100 entries",
+    "Create each valid item using the same validation rules as single link creation",
+    "Return one result per item in request order with index, status (CREATED or REJECTED), the link on success and a problem type plus message on failure",
+    "Return summary counts: requested, created, failed"
+  ],
+  "nonFunctionalRequirements": [
+    "Partial failure must not roll back successfully created items",
+    "Reuse existing URL and alias validation; no duplicated rules",
+    "Bounded request size to protect the service (max 100 items)"
+  ],
+  "acceptanceCriteria": [
+    {"id": "AC1", "description": "A batch with valid and invalid items returns 200 with CREATED results for valid items and REJECTED results with problem types for invalid ones"},
+    {"id": "AC2", "description": "Items keep their request order and index in the response"},
+    {"id": "AC3", "description": "An empty batch or a batch of more than 100 items is rejected with 400 problem details"},
+    {"id": "AC4", "description": "A duplicate custom alias inside one batch creates the first item and rejects the second with alias-taken"},
+    {"id": "AC5", "description": "Links created through the bulk endpoint resolve through GET /{code}"}
+  ],
+  "assumptions": [
+    "Items are processed sequentially; 100 items is small enough that parallelism is not needed",
+    "Each bulk request consumes one rate-limit token; per-item weighting is a follow-up",
+    "No idempotency key for the batch in this iteration"
+  ],
+  "outOfScope": [
+    "Asynchronous or file-upload based bulk import",
+    "Bulk delete or bulk update"
+  ],
+  "ambiguities": [
+    {
+      "id": "Q1",
+      "question": "Should the HTTP status reflect partial failure (for example 207 Multi-Status)?",
+      "options": ["Always 200 with per-item status", "207 when any item fails"],
+      "recommendedOption": "Always 200 with per-item status",
+      "blocking": false,
+      "impact": "Client error handling; 207 is a WebDAV status that many HTTP clients treat oddly"
+    }
+  ]
+}

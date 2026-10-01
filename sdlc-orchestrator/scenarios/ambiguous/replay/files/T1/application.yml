@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: shortener-service
+  datasource:
+    url: jdbc:h2:mem:shortener;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
+
+shortener:
+  base-url: http://localhost:8080
+  code-length: 7
+  max-url-length: 2048
+  rate-limit:
+    capacity: 20
+    refill-per-minute: 60
+  cache:
+    max-entries: 10000
+    ttl: 10m
+  analytics:
+    async: true
+    queue-capacity: 10000
+    # Override in every real environment (SHORTENER_ANALYTICS_VISITOR_SALT).
+    visitor-salt: local-dev-salt
+  safety:
+    # Destinations on these domains (and their subdomains) are refused at creation time.
+    blocked-domains:
+      - malware.test
+      - phishing.test
+    block-ip-literals: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

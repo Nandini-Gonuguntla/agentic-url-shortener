@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: URL Shortener
+  version: 1.0.0
+  description: Short links with click analytics. Errors are RFC 9457 problem details.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/links:
+    post:
+      summary: Create a short link
+      description: Rate limited per client address (token bucket).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateLinkRequest' }
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location: { schema: { type: string }, description: /api/v1/links/{code} }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Link' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: Rate limited
+          headers:
+            Retry-After: { schema: { type: integer }, description: Seconds until a retry can succeed }
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+  /api/v1/links/{code}:
+    parameters:
+      - $ref: '#/components/parameters/Code'
+    get:
+      summary: Link metadata
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Link' }
+        '404': { $ref: '#/components/responses/Problem' }
+    delete:
+      summary: Delete a link and its analytics
+      responses:
+        '204': { description: Deleted }
+        '404': { $ref: '#/components/responses/Problem' }
+  /api/v1/links/{code}/stats:
+    parameters:
+      - $ref: '#/components/parameters/Code'
+      - name: days
+        in: query
+        schema: { type: integer, minimum: 1, maximum: 90, default: 30 }
+    get:
+      summary: Click analytics
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LinkStats' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /{code}:
+    parameters:
+      - $ref: '#/components/parameters/Code'
+    get:
+      summary: Redirect to the target URL
+      description: 302 with Cache-Control no-store so every click is counted.
+      responses:
+        '302':
+          description: Redirect
+          headers:
+            Location: { schema: { type: string, format: uri } }
+        '404': { $ref: '#/components/responses/Problem' }
+components:
+  parameters:
+    Code:
+      name: code
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[A-Za-z0-9_-]{3,32}$' }
+  responses:
+    Problem:
+      description: Problem details
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    CreateLinkRequest:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, maxLength: 2048, description: Absolute http or https URL }
+        customAlias: { type: string, pattern: '^[A-Za-z0-9_-]{3,32}$', description: Reserved words such as api and actuator are refused }
+    Link:
+      type: object
+      properties:
+        code: { type: string }
+        shortUrl: { type: string, format: uri }
+        targetUrl: { type: string, format: uri }
+        createdAt: { type: string, format: date-time }
+        clickCount: { type: integer, format: int64 }
+    LinkStats:
+      type: object
+      properties:
+        code: { type: string }
+        totalClicks: { type: integer, format: int64 }
+        uniqueVisitors: { type: integer, format: int64, description: Distinct salted visitor hashes }
+        lastAccessedAt: { type: string, format: date-time, nullable: true }
+        clicksByDay:
+          type: array
+          items:
+            type: object
+            properties:
+              day: { type: string, format: date }
+              clicks: { type: integer, format: int64 }
+        topReferrers:
+          type: array
+          items:
+            type: object
+            properties:
+              host: { type: string }
+              clicks: { type: integer, format: int64 }
+    Problem:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [urn:problem:invalid-url, urn:problem:invalid-alias, urn:problem:alias-taken, urn:problem:invalid-request,
+                 urn:problem:link-not-found, urn:problem:rate-limited, urn:problem:temporarily-unavailable]
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }

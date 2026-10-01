@@ -1,0 +1,32 @@
+{
+  "overview": "Store an optional expires_at per link and enforce it in LinkService.resolve after the cache lookup. ResolvedLink carries expiresAt so cached entries stay correct without extra queries. Creation accepts expiresInSeconds (1 second to 10 years), converted to an absolute instant with the injected Clock. Expired links raise LinkExpiredException, mapped to 410 Gone with urn:problem:link-expired, which tells clients the link existed but is no longer valid (unlike 404). The schema change is a new, nullable column, so the change is backward compatible and safe to deploy before or after the code.",
+  "components": [
+    {"name": "Schema", "responsibility": "Nullable expires_at column", "files": ["src/main/resources/db/migration/V2__add_link_expiry.sql"]},
+    {"name": "Link entity", "responsibility": "Persist expiry; expiry predicate", "files": ["src/main/java/com/agentic/shortener/domain/Link.java"]},
+    {"name": "LinkService", "responsibility": "TTL on create; expiry enforcement for every resolve", "files": ["src/main/java/com/agentic/shortener/service/LinkService.java", "src/main/java/com/agentic/shortener/service/ResolvedLink.java", "src/main/java/com/agentic/shortener/service/LinkExpiredException.java"]},
+    {"name": "API", "responsibility": "Request field, response field, 410 mapping", "files": ["src/main/java/com/agentic/shortener/api/CreateLinkRequest.java", "src/main/java/com/agentic/shortener/api/LinkResponse.java", "src/main/java/com/agentic/shortener/api/LinkController.java", "src/main/java/com/agentic/shortener/api/GlobalExceptionHandler.java"]}
+  ],
+  "apiChanges": [
+    {"method": "POST", "path": "/api/v1/links", "description": "Optional expiresInSeconds", "breaking": false},
+    {"method": "GET", "path": "/api/v1/links/{code}", "description": "New expiresAt field (null when the link never expires)", "breaking": false},
+    {"method": "GET", "path": "/{code}", "description": "410 Gone with urn:problem:link-expired for expired links", "breaking": false}
+  ],
+  "schemaChanges": ["V2__add_link_expiry.sql: ALTER TABLE link ADD COLUMN expires_at TIMESTAMP WITH TIME ZONE (nullable)"],
+  "impacts": ["SCHEMA_CHANGE", "PUBLIC_API_CHANGE"],
+  "decisions": [
+    {"decision": "Relative TTL (expiresInSeconds) in the API, absolute instant in storage", "rationale": "Clients do not need synchronized clocks; storage stays unambiguous"},
+    {"decision": "410 Gone instead of 404 for expired links", "rationale": "Distinguishes expired from never-existed for clients and support"},
+    {"decision": "Check expiry after the cache lookup", "rationale": "Cache entries outlive expiry; enforcing on every resolve keeps hits correct at zero query cost"},
+    {"decision": "Nullable column, no backfill", "rationale": "NULL means never expires, which is exactly the required behaviour for existing links"}
+  ],
+  "alternatives": [
+    {"option": "Delete links when they expire", "whyNotChosen": "Loses analytics and turns 410 into 404; can be added later as a purge job"},
+    {"option": "Evict expired entries via cache TTL", "whyNotChosen": "Cache TTL is global; per-link expiry would still need a check on hits"}
+  ],
+  "risks": [
+    {"description": "Expired links that are cached keep redirecting", "likelihood": "MEDIUM", "impact": "HIGH", "mitigation": "Enforce expiry on every resolve including cache hits; integration test with a warmed cache and a controllable clock"},
+    {"description": "Migration breaks the running release", "likelihood": "LOW", "impact": "HIGH", "mitigation": "Additive nullable column only; verified by the migration safety stage"}
+  ],
+  "testStrategy": "Unit-test Link.isExpiredAt boundaries. Integration-test with a @Primary mutable Clock: expiresAt in metadata, 302 before expiry, 410 after expiry with a warmed cache, no-expiry links after ten years, and validation of expiresInSeconds bounds. Run the full existing suite to prove backward compatibility.",
+  "rollbackPlan": "Revert the application commit; the nullable expires_at column is ignored by the previous release, so no down-migration is needed. If required, drop the column in a later release after all instances run code that does not map it."
+}

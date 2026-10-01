@@ -1,0 +1,8 @@
+{
+  "taskId": "T4",
+  "summary": "Integration tests for the bulk endpoint",
+  "changes": [
+    {"path": "src/test/java/com/agentic/shortener/api/BulkLinkApiIntegrationTest.java", "action": "CREATE", "content": "@file:files/T4/BulkLinkApiIntegrationTest.java"}
+  ],
+  "notes": "Uses a unique alias prefix so the test is independent of other tests sharing the in-memory database."
+}

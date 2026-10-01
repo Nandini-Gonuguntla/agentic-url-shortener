@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDLC Orchestrator</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #fff; --text: #1d232b; --muted: #5d6875; --line: #dde2e8;
+    --accent: #2f5bd3; --ok: #1f8a4c; --warn: #b7791f; --bad: #c53030; --wait: #6b46c1; --run: #2b6cb0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171b; --panel: #1c2026; --text: #e4e8ee; --muted: #9aa5b1; --line: #2c333c;
+      --accent: #7c9cff; --ok: #48bb78; --warn: #ecc94b; --bad: #fc8181; --wait: #b794f4; --run: #63b3ed; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, Segoe UI, sans-serif; background: var(--bg); color: var(--text); }
+  header { display: flex; gap: 16px; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; padding: 16px 20px; }
+  main, aside { min-width: 0; }
+  #summary, .ask li, td { overflow-wrap: anywhere; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 16px; min-width: 0; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  button { font: inherit; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.danger { color: var(--bad); }
+  input, textarea, select { font: inherit; width: 100%; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--text); }
+  .scenario { border-top: 1px solid var(--line); padding: 10px 0; }
+  .scenario:first-of-type { border-top: 0; }
+  .scenario p { margin: 4px 0 8px; color: var(--muted); font-size: 12.5px; }
+  .run-item { display: block; width: 100%; text-align: left; margin-bottom: 6px; }
+  .run-item.active { border-color: var(--accent); }
+  .status { font-weight: 600; font-size: 12px; }
+  .s-SUCCEEDED { color: var(--ok); } .s-FAILED { color: var(--bad); } .s-STOPPED, .s-CANCELLED { color: var(--warn); }
+  .s-RUNNING { color: var(--run); } .s-WAITING_FOR_HUMAN, .s-AWAITING_APPROVAL, .s-AWAITING_INPUT { color: var(--wait); } .s-PENDING { color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; }
+  .scroll { overflow-x: auto; }
+  .ask { border: 1px solid var(--wait); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .ask ul { margin: 6px 0 10px; padding-left: 18px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .row > input { flex: 1 1 160px; width: auto; }
+  .row > input[type=checkbox], .row > input[type=radio] { flex: none; margin: 0; }
+  label.row { justify-content: flex-start; cursor: pointer; }
+  .muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+  #audit { max-height: 360px; overflow: auto; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .kpi { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+  .kpi b { display: block; font-size: 18px; }
+  .kpi span { color: var(--muted); font-size: 12px; }
+  #graph { overflow-x: auto; min-height: 60px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>SDLC Orchestrator</h1>
+  <span class="pill" id="mode">loading</span>
+  <span class="pill">humans approve, agents execute</span>
+</header>
+<div class="layout">
+  <aside>
+    <section>
+      <h2>Start a run</h2>
+      <label class="row"><input type="checkbox" id="auto" style="width:auto"> Auto-approve (demo mode)</label>
+      <div id="scenarios"></div>
+      <div class="scenario">
+        <b>Custom requirement</b>
+        <p>Needs live mode (ANTHROPIC_API_KEY).</p>
+        <textarea id="custom" rows="3" placeholder="Describe the change..."></textarea>
+        <div class="row"><button onclick="startCustom()">Start</button></div>
+      </div>
+    </section>
+    <section>
+      <h2>Runs</h2>
+      <div id="runs" class="muted">No runs yet</div>
+    </section>
+  </aside>
+  <main>
+    <section>
+      <h2>Reliability</h2>
+      <div class="kpis" id="kpis"></div>
+    </section>
+    <div id="detail" class="muted">Select or start a run.</div>
+  </main>
+</div>
+<script type="module">
+import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+mermaid.initialize({ startOnLoad: false, theme: dark ? "dark" : "neutral", securityLevel: "strict" });
+window.renderGraph = async (text) => {
+  const colored = text + Object.entries({SUCCEEDED: "#c6f6d5", RUNNING: "#bee3f8", AWAITING_APPROVAL: "#e9d8fd",
+      AWAITING_INPUT: "#e9d8fd", FAILED: "#fed7d7", CANCELLED: "#feebc8"})
+    .map(([s, c]) => `\n  classDef ${s} fill:${c},color:#1a202c`).join("")
+    + [...text.matchAll(/^\s+(\w+)\["[^"]*<br\/>(\w+)"\]/gm)].map(m => `\n  class ${m[1]} ${m[2]}`).join("");
+  try {
+    const { svg } = await mermaid.render("g" + Date.now(), colored);
+    document.getElementById("graph").innerHTML = svg;
+  } catch (e) { document.getElementById("graph").textContent = text; }
+};
+</script>
+<script>
+let selected = null, lastGraph = "", lastAudit = 0;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const api = async (path, opts = {}) => {
+  const res = await fetch("/api" + path, { headers: { "Content-Type": "application/json" }, ...opts });
+  if (!res.ok) { const t = await res.text(); throw new Error(res.status + " " + t); }
+  return res.status === 202 || res.status === 204 ? null : res.json();
+};
+const post = (path, body) => api(path, { method: "POST", body: JSON.stringify(body) }).catch(e => alert(e.message));
+const approvals = () => document.getElementById("auto").checked ? "AUTO" : "MANUAL";
+
+async function loadScenarios() {
+  const list = await api("/scenarios");
+  document.getElementById("scenarios").innerHTML = list.map(s => `
+    <div class="scenario"><b>${esc(s.title)}</b> <span class="pill">${esc(s.type)}</span>
+      <p>${esc(s.requirement)}</p>
+      <button class="primary" onclick="start('${esc(s.id)}')">Run</button></div>`).join("");
+}
+async function start(id) {
+  const run = await api("/runs", { method: "POST", body: JSON.stringify({ scenarioId: id, approvals: approvals() }) });
+  select(run.runId);
+}
+async function startCustom() {
+  const requirement = document.getElementById("custom").value.trim();
+  if (!requirement) return;
+  const run = await api("/runs", { method: "POST", body: JSON.stringify({ requirement, approvals: approvals() }) }).catch(e => alert(e.message));
+  if (run) select(run.runId);
+}
+function select(id) { selected = id; lastGraph = ""; lastAudit = 0; refresh(); }
+
+async function refresh() {
+  const [runs, metrics] = await Promise.all([api("/runs"), api("/metrics")]);
+  document.getElementById("mode").textContent = "LLM: " + metrics.llmMode;
+  const r = metrics.reliability, c = r.counters;
+  const kpi = (v, l) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`;
+  document.getElementById("kpis").innerHTML =
+    kpi(Math.round(r.runSuccessRate * 100) + "%", "run success rate") +
+    kpi((c["runs.succeeded"] || 0) + "/" + (c["runs.started"] || 0), "runs succeeded/started") +
+    kpi(c["stage.retries"] || 0, "retries") + kpi(c["stage.reworks"] || 0, "reworks") +
+    kpi(c["workspace.rollbacks"] || 0, "rollbacks") + kpi(c["stage.fallbacks"] || 0, "fallbacks") +
+    kpi((r.mttrMs / 1000).toFixed(1) + "s", "MTTR") +
+    kpi((r.endToEndLatency.p50Ms / 1000).toFixed(0) + "s", "e2e latency p50") +
+    kpi(c["approvals.requested"] || 0, "approvals requested");
+  document.getElementById("runs").innerHTML = runs.length ? runs.map(x => `
+    <button class="run-item ${x.runId === selected ? "active" : ""}" onclick="select('${x.runId}')">
+      <div>${esc(x.title)}</div>
+      <div class="status s-${x.status}">${x.status}${x.pendingApprovals + x.pendingQuestions ? " · needs you" : ""}</div>
+      <div class="muted mono">${x.runId}</div></button>`).join("") : "No runs yet";
+  if (!selected && runs.length) selected = runs[0].runId;
+  if (selected) await renderRun();
+}
+
+async function renderRun() {
+  const run = await api("/runs/" + selected);
+  const detail = document.getElementById("detail");
+  if (!detail.dataset.run || detail.dataset.run !== selected) {
+    detail.dataset.run = selected;
+    detail.innerHTML = `
+      <section><h2>Run</h2><div id="summary"></div></section>
+      <div id="asks"></div>
+      <section><h2>Workflow graph (live)</h2><div id="graph"></div></section>
+      <section><h2>Stages</h2><div class="scroll" id="stages"></div></section>
+      <section><h2>Decision lineage</h2><div class="scroll" id="decisions"></div></section>
+      <section><h2>Audit trail</h2><div id="verify" class="muted"></div><div id="audit" class="mono"></div></section>`;
+    lastGraph = ""; lastAudit = 0;
+  }
+  const terminal = ["SUCCEEDED", "FAILED", "STOPPED"].includes(run.status);
+  const outputs = ["PR_DESCRIPTION.md", "ENGINEERING_SUMMARY.md", "change.patch", "COMMITS.txt"]
+    .map(f => `<a target="_blank" href="/api/runs/${run.runId}/output/${f}">${f}</a>`).join(" · ");
+  document.getElementById("summary").innerHTML = `
+    <div><b>${esc(run.title)}</b> <span class="status s-${run.status}">${run.status}</span> ${esc(run.statusReason)}</div>
+    <p class="muted">${esc(run.requirement)}</p>
+    <div class="muted">${(run.durationMs / 1000).toFixed(0)}s · ${run.agentInvocations} agent invocations · approvals ${run.approvalPolicy}
+      · trace <span class="mono">${run.traceId}</span> · ${esc(JSON.stringify(run.counters))}</div>
+    <div class="row">${terminal ? outputs : `<button class="danger" onclick="stopRun()">Safe stop</button>`}</div>`;
+
+  const asks = document.getElementById("asks");
+  const askKey = JSON.stringify([run.pendingApprovals.map(a => a.id), run.pendingQuestions.map(q => q.id)]);
+  if (asks.dataset.key !== askKey) {
+    asks.dataset.key = askKey;
+    const upstream = run.stages.map(s => `<option value="${s.id}">${s.id}</option>`).join("");
+    asks.innerHTML = run.pendingApprovals.map(a => `
+      <section class="ask"><h2>Approval needed · ${esc(a.stageId)} · risk ${esc(a.riskLevel)} (${a.riskScore})</h2>
+        <div class="muted">Artifact <a target="_blank" href="/api/runs/${run.runId}/artifacts/${a.stageId}">${esc(a.artifactRef)}</a></div>
+        <ul>${a.reasons.map(r => `<li>${esc(r)}</li>`).join("")}</ul>
+        <div class="row"><input id="who-${a.id}" placeholder="Your name" value="reviewer">
+          <input id="why-${a.id}" placeholder="Comment (required to reject)"></div>
+        <div class="row"><select id="back-${a.id}" style="width:auto"><option value="">rework: default</option>${upstream}</select>
+          <button class="primary" onclick="decide('${a.id}','APPROVE')">Approve</button>
+          <button onclick="decide('${a.id}','REJECT')">Reject</button>
+          <button class="danger" onclick="decide('${a.id}','ABORT')">Abort run</button></div></section>`).join("")
+      + groupQuestions(run.pendingQuestions);
+  }
+
+  if (run.mermaid !== lastGraph) { lastGraph = run.mermaid; window.renderGraph && window.renderGraph(run.mermaid); }
+
+  document.getElementById("stages").innerHTML = `<table><tr><th>Stage</th><th>Status</th><th>Agent</th><th>Runs</th><th>Gen</th><th>Last error</th></tr>
+    ${run.stages.map(s => `<tr><td><a target="_blank" href="/api/runs/${run.runId}/artifacts/${s.id}">${s.id}</a>
+      <div class="muted">${esc(s.description)}</div></td><td class="status s-${s.status}">${s.status}</td>
+      <td>${esc(s.agent)}${s.usingFallback ? " (fallback)" : ""}</td><td>${s.executions}</td><td>${s.generation}</td>
+      <td class="muted">${esc((s.lastError || "").slice(0, 220))}</td></tr>`).join("")}</table>`;
+
+  document.getElementById("decisions").innerHTML = run.decisions.length ? `<table><tr><th>#</th><th>Type</th><th>By</th><th>Decision</th><th>Why</th></tr>
+    ${run.decisions.map(d => `<tr><td>${d.id}</td><td>${d.type}</td><td>${esc(d.actor)}</td><td>${esc(d.summary)}</td>
+      <td class="muted">${esc((d.rationale || "").slice(0, 260))}</td></tr>`).join("")}</table>` : `<span class="muted">No decisions yet</span>`;
+
+  const events = await api(`/runs/${run.runId}/audit?since=${lastAudit}`);
+  const audit = document.getElementById("audit");
+  for (const e of events) {
+    lastAudit = e.seq;
+    const div = document.createElement("div");
+    div.textContent = `${e.seq.toString().padStart(3)} ${e.timestamp.slice(11, 19)} ${e.type.padEnd(22)} ${(e.stageId || "").padEnd(18)} ${e.actor || ""}`;
+    audit.prepend(div);
+  }
+  if (terminal) {
+    const v = await api(`/runs/${run.runId}/audit/verify`);
+    document.getElementById("verify").textContent = `Hash chain: ${v.message} (${v.entries} entries)`;
+  }
+}
+
+function groupQuestions(questions) {
+  if (!questions.length) return "";
+  const stage = questions[0].stageId;
+  return `<section class="ask"><h2>Clarification needed · ${esc(stage)}</h2>
+    ${questions.map(q => `<div style="margin-bottom:10px"><b>${esc(q.id)}. ${esc(q.question)}</b>
+      <div class="muted">${esc(q.impact)}</div>
+      ${q.options.map((o, i) => `<label class="row"><input type="radio" style="width:auto" name="q-${q.id}" value="${esc(o)}"
+        ${o === q.recommendedOption ? "checked" : ""}> ${esc(o)}${o === q.recommendedOption ? " <span class='pill'>recommended</span>" : ""}</label>`).join("")}
+    </div>`).join("")}
+    <div class="row"><input id="answerer" value="stakeholder" style="max-width:200px">
+      <button class="primary" onclick='answer(${JSON.stringify(stage)}, ${JSON.stringify(questions.map(q => q.id))})'>Submit answers</button></div></section>`;
+}
+async function decide(id, verdict) {
+  const comment = document.getElementById("why-" + id).value;
+  if (verdict !== "APPROVE" && !comment) { alert("Please explain the rejection; it becomes feedback for the agent."); return; }
+  await post(`/runs/${selected}/approvals/${id}`, { verdict, approver: document.getElementById("who-" + id).value,
+    comment, reworkStage: document.getElementById("back-" + id).value || null });
+  refresh();
+}
+async function answer(stage, ids) {
+  const answers = {};
+  ids.forEach(id => { const c = document.querySelector(`input[name="q-${id}"]:checked`); if (c) answers[id] = c.value; });
+  await post(`/runs/${selected}/answers/${stage}`, { answers, actor: document.getElementById("answerer").value });
+  refresh();
+}
+async function stopRun() {
+  const reason = prompt("Reason for the safe stop?", "Stopped by operator");
+  if (reason !== null) { await post(`/runs/${selected}/stop`, { reason, actor: "dashboard-user" }); refresh(); }
+}
+loadScenarios();
+refresh();
+setInterval(() => refresh().catch(() => {}), 1500);
+</script>
+</body>
+</html>

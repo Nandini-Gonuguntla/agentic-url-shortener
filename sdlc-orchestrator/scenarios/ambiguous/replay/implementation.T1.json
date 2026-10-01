@@ -1,0 +1,9 @@
+{
+  "taskId": "T1",
+  "summary": "Add shortener.safety configuration",
+  "changes": [
+    {"path": "src/main/java/com/agentic/shortener/config/SafetyProperties.java", "action": "CREATE", "content": "@file:files/T1/SafetyProperties.java"},
+    {"path": "src/main/resources/application.yml", "action": "MODIFY", "content": "@file:files/T1/application.yml"}
+  ],
+  "notes": "Uses reserved .test domains as defaults so nothing real is blocked by accident."
+}

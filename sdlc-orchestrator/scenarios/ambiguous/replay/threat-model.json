@@ -1,0 +1,10 @@
+{
+  "summary": "Short links hide their destination, so the main risks are spoofing (users trust the shortener's domain) and information disclosure through URLs. The design mitigates the deceptive-destination techniques that can be detected without a network call.",
+  "threats": [
+    {"category": "Spoofing", "description": "Attacker shortens a phishing URL so victims trust the shortener domain", "mitigation": "Configurable domain blocklist with subdomain matching", "severity": "HIGH"},
+    {"category": "Spoofing", "description": "User info hides the real host: https://bank.example@evil.test", "mitigation": "Reject any URL with user info", "severity": "HIGH"},
+    {"category": "Tampering", "description": "Blocklist bypass with IP literals or numeric/hex host encodings", "mitigation": "Treat IPv4, IPv6, decimal and hex hosts as IP literals and reject them", "severity": "MEDIUM"},
+    {"category": "Information disclosure", "description": "Rejected URLs with credentials written to logs or error bodies", "mitigation": "Error messages describe the rule only; rejected URLs are never logged", "severity": "MEDIUM"},
+    {"category": "Denial of service", "description": "Very large blocklist slows down link creation", "mitigation": "Set-based suffix checks, linear in the number of host labels", "severity": "LOW"}
+  ]
+}

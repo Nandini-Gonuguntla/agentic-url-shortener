@@ -1,0 +1,8 @@
+{
+  "rationale": "Configuration first so the policy can be constructed from it, then the policy and its integration into the create path, then tests. Each threat-model mitigation maps to a check in T2 and a test in T3.",
+  "tasks": [
+    {"id": "T1", "title": "Safety configuration", "description": "SafetyProperties record (shortener.safety.*) and defaults in application.yml.", "kind": "CONFIG", "dependsOn": [], "files": ["src/main/java/com/agentic/shortener/config/SafetyProperties.java", "src/main/resources/application.yml"], "coversCriteria": ["AC4"]},
+    {"id": "T2", "title": "Destination safety policy on the create path", "description": "DestinationSafetyPolicy with blocklist, IP-literal and credential checks; UnsafeDestinationException; LinkService invokes the policy; GlobalExceptionHandler maps to 422.", "kind": "CODE", "dependsOn": ["T1"], "files": ["src/main/java/com/agentic/shortener/service/DestinationSafetyPolicy.java", "src/main/java/com/agentic/shortener/service/UnsafeDestinationException.java", "src/main/java/com/agentic/shortener/service/LinkService.java", "src/main/java/com/agentic/shortener/api/GlobalExceptionHandler.java"], "coversCriteria": ["AC1", "AC2", "AC3", "AC5"]},
+    {"id": "T3", "title": "Safety tests", "description": "Unit tests for the policy and API tests for 422 responses.", "kind": "TEST", "dependsOn": ["T2"], "files": ["src/test/java/com/agentic/shortener/service/DestinationSafetyPolicyTest.java", "src/test/java/com/agentic/shortener/api/UnsafeDestinationApiTest.java"], "coversCriteria": ["AC1", "AC2", "AC3", "AC4", "AC5"]}
+  ]
+}

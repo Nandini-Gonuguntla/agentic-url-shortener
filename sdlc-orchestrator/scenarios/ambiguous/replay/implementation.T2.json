@@ -1,0 +1,11 @@
+{
+  "taskId": "T2",
+  "summary": "Refuse unsafe destinations on create with 422 urn:problem:unsafe-destination",
+  "changes": [
+    {"path": "src/main/java/com/agentic/shortener/service/DestinationSafetyPolicy.java", "action": "CREATE", "content": "@file:files/T2/DestinationSafetyPolicy.java"},
+    {"path": "src/main/java/com/agentic/shortener/service/UnsafeDestinationException.java", "action": "CREATE", "content": "@file:files/T2/UnsafeDestinationException.java"},
+    {"path": "src/main/java/com/agentic/shortener/service/LinkService.java", "action": "MODIFY", "content": "@file:files/T2/LinkService.java"},
+    {"path": "src/main/java/com/agentic/shortener/api/GlobalExceptionHandler.java", "action": "MODIFY", "content": "@file:files/T2/GlobalExceptionHandler.java"}
+  ],
+  "notes": "Error messages name the rule, never the URL, per the threat model."
+}

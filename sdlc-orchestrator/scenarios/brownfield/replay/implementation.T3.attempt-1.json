@@ -1,0 +1,14 @@
+{
+  "taskId": "T3",
+  "summary": "TTL on create, 410 for expired links, expiresAt in the API",
+  "changes": [
+    {"path": "src/main/java/com/agentic/shortener/service/ResolvedLink.java", "action": "MODIFY", "content": "@file:files/T3/ResolvedLink.java"},
+    {"path": "src/main/java/com/agentic/shortener/service/LinkService.java", "action": "MODIFY", "content": "@file:files/T3/LinkService.attempt-1.java"},
+    {"path": "src/main/java/com/agentic/shortener/service/LinkExpiredException.java", "action": "CREATE", "content": "@file:files/T3/LinkExpiredException.java"},
+    {"path": "src/main/java/com/agentic/shortener/api/GlobalExceptionHandler.java", "action": "MODIFY", "content": "@file:files/T3/GlobalExceptionHandler.java"},
+    {"path": "src/main/java/com/agentic/shortener/api/CreateLinkRequest.java", "action": "MODIFY", "content": "@file:files/T3/CreateLinkRequest.java"},
+    {"path": "src/main/java/com/agentic/shortener/api/LinkResponse.java", "action": "MODIFY", "content": "@file:files/T3/LinkResponse.java"},
+    {"path": "src/main/java/com/agentic/shortener/api/LinkController.java", "action": "MODIFY", "content": "@file:files/T3/LinkController.java"}
+  ],
+  "notes": "Expiry is checked when a link is loaded from the database."
+}

@@ -1,0 +1,33 @@
+{
+  "title": "Link expiration",
+  "summary": "Allow an optional time-to-live when creating a link. Expired links answer redirects with 410 Gone (distinguishable from unknown codes), and link metadata exposes the expiry instant. Links created before the change, and links created without a TTL, never expire.",
+  "changeType": "ENHANCEMENT",
+  "functionalRequirements": [
+    "POST /api/v1/links accepts optional expiresInSeconds (positive integer, at most 10 years)",
+    "The expiry instant is stored with the link and returned as expiresAt in link metadata",
+    "GET /{code} returns 410 Gone with problem type urn:problem:link-expired once now >= expiresAt",
+    "Links without expiresAt never expire"
+  ],
+  "nonFunctionalRequirements": [
+    "Backward compatible schema change: existing rows and the running release keep working",
+    "Expiry must be enforced on cache hits as well as database lookups",
+    "No additional database query on the redirect hot path"
+  ],
+  "acceptanceCriteria": [
+    {"id": "AC1", "description": "Creating a link with expiresInSeconds=60 returns expiresAt equal to creation time plus 60 seconds"},
+    {"id": "AC2", "description": "Before expiry, GET /{code} redirects with 302"},
+    {"id": "AC3", "description": "After expiry, GET /{code} returns 410 with urn:problem:link-expired, even if the link was cached"},
+    {"id": "AC4", "description": "Links created without expiresInSeconds keep redirecting indefinitely and show no expiresAt"},
+    {"id": "AC5", "description": "expiresInSeconds of zero, negative, or more than 10 years is rejected with 400"}
+  ],
+  "assumptions": [
+    "Expiry is evaluated against the service clock (UTC)",
+    "Expired links are kept (not deleted) so their analytics remain available",
+    "Stats and metadata endpoints keep working for expired links"
+  ],
+  "outOfScope": [
+    "Changing or removing the expiry of an existing link",
+    "Background purge of expired links"
+  ],
+  "ambiguities": []
+}

@@ -1,0 +1,21 @@
+{
+  "summary": "The feature is additive. Single-link creation already lives in LinkService.create, which owns URL validation, alias policy, collision retry and the unique-constraint race handling. A bulk endpoint should be a thin new controller plus a small orchestration service that calls LinkService.create per item and converts domain exceptions into per-item results. No schema, configuration or existing API changes are needed.",
+  "impactedFiles": [
+    {"path": "src/main/java/com/agentic/shortener/service/BulkLinkService.java", "changeKind": "CREATE", "reason": "Per-item orchestration over LinkService.create with exception-to-result mapping"},
+    {"path": "src/main/java/com/agentic/shortener/service/BulkItemResult.java", "changeKind": "CREATE", "reason": "Domain result type: created link or rejection reason"},
+    {"path": "src/main/java/com/agentic/shortener/api/BulkCreateLinksRequest.java", "changeKind": "CREATE", "reason": "Request DTO with size limits"},
+    {"path": "src/main/java/com/agentic/shortener/api/BulkCreateLinksResponse.java", "changeKind": "CREATE", "reason": "Response DTO with counts and per-item results"},
+    {"path": "src/main/java/com/agentic/shortener/api/BulkLinkController.java", "changeKind": "CREATE", "reason": "POST /api/v1/links/bulk"},
+    {"path": "src/test/java/com/agentic/shortener/service/BulkLinkServiceTest.java", "changeKind": "CREATE", "reason": "Unit tests for result mapping"},
+    {"path": "src/test/java/com/agentic/shortener/api/BulkLinkApiIntegrationTest.java", "changeKind": "CREATE", "reason": "End-to-end API behaviour"}
+  ],
+  "impactedApis": ["POST /api/v1/links/bulk (new)"],
+  "dataFlows": [
+    "Client -> RateLimitFilter (POST /api/v1/links* is limited, so the bulk path is covered) -> BulkLinkController -> BulkLinkService -> LinkService.create -> LinkRepository.saveAndFlush per item"
+  ],
+  "architecturalNotes": [
+    "LinkService.create is deliberately not transactional; each insert has its own transaction, which gives per-item atomicity for free",
+    "Domain exceptions (InvalidUrlException, InvalidAliasException, AliasAlreadyExistsException) map to the same problem types as the single endpoint",
+    "Reuse LinkResponse.from for consistent link representation"
+  ]
+}

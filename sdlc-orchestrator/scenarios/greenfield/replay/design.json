@@ -1,0 +1,28 @@
+{
+  "overview": "Introduce BulkLinkController (POST /api/v1/links/bulk) and BulkLinkService. The service loops over items, calls LinkService.create for each, and maps outcomes to a sealed BulkItemResult (Created or Rejected with a problem type). Because LinkService.create runs each insert in its own transaction, a failure on one item cannot roll back another. The request is bounded to 1-100 items with bean validation; per-item content is validated by the existing domain rules so error types stay identical to the single-create endpoint.",
+  "components": [
+    {"name": "BulkLinkController", "responsibility": "HTTP contract, request size validation, DTO mapping", "files": ["src/main/java/com/agentic/shortener/api/BulkLinkController.java", "src/main/java/com/agentic/shortener/api/BulkCreateLinksRequest.java", "src/main/java/com/agentic/shortener/api/BulkCreateLinksResponse.java"]},
+    {"name": "BulkLinkService", "responsibility": "Independent per-item creation and exception-to-result mapping", "files": ["src/main/java/com/agentic/shortener/service/BulkLinkService.java", "src/main/java/com/agentic/shortener/service/BulkItemResult.java"]}
+  ],
+  "apiChanges": [
+    {"method": "POST", "path": "/api/v1/links/bulk", "description": "Create up to 100 links; returns per-item CREATED/REJECTED results and counts", "breaking": false}
+  ],
+  "schemaChanges": [],
+  "impacts": ["PUBLIC_API_CHANGE"],
+  "decisions": [
+    {"decision": "Always return 200 with per-item status", "rationale": "Clients get one predictable shape; 207 Multi-Status is a WebDAV code with uneven client support"},
+    {"decision": "Delegate to LinkService.create per item", "rationale": "Single source of truth for validation, alias policy and collision handling"},
+    {"decision": "Sequential processing", "rationale": "At most 100 small inserts; parallelism adds connection-pool pressure without clear benefit"},
+    {"decision": "Map exceptions to the existing urn:problem types", "rationale": "Consistent error vocabulary across endpoints"}
+  ],
+  "alternatives": [
+    {"option": "One transaction for the whole batch (all-or-nothing)", "whyNotChosen": "The requirement explicitly asks that one bad URL does not fail the batch"},
+    {"option": "Asynchronous job with polling", "whyNotChosen": "Over-engineered for 100 items; adds job storage and status APIs"}
+  ],
+  "risks": [
+    {"description": "A bulk call consumes one rate-limit token for up to 100 creations, weakening abuse protection", "likelihood": "MEDIUM", "impact": "MEDIUM", "mitigation": "Hard cap of 100 items per request; follow-up to weight tokens by item count"},
+    {"description": "Large batches increase request latency", "likelihood": "LOW", "impact": "LOW", "mitigation": "Bounded size; each insert is a single indexed write"}
+  ],
+  "testStrategy": "Unit-test BulkLinkService result mapping with a mocked LinkService (created, invalid URL, invalid alias, alias taken). Integration-test the endpoint with MockMvc: mixed batch, ordering, duplicate alias within a batch, empty and oversized batches, and that created links redirect.",
+  "rollbackPlan": "Purely additive: revert the commit or stop routing to /api/v1/links/bulk. No schema or data migration to undo; links already created remain valid single links."
+}

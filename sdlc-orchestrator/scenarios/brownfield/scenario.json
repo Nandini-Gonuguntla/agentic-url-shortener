@@ -1,0 +1,8 @@
+{
+  "id": "brownfield",
+  "title": "Link expiration",
+  "type": "BROWNFIELD",
+  "description": "Enhancement across existing layers plus a schema migration. Shows codebase impact analysis, risk-based design approval, policy-driven approval before a migration is written, dynamic insertion of a migration-safety stage, and a test failure that triggers rollback and bounded rework of the implementation.",
+  "requirement": "Links should be able to expire. When creating a link, a client can optionally pass expiresInSeconds. Once a link has expired, redirects must stop working and return 410 Gone, and the link's metadata should show when it expires. Existing links must keep working and never expire.",
+  "scriptedAnswers": {}
+}

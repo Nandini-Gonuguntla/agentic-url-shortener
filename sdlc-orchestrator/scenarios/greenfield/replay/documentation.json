@@ -1,0 +1,7 @@
+{
+  "summary": "Document the bulk creation endpoint and add a changelog entry",
+  "changes": [
+    {"path": "docs/bulk-links.md", "action": "CREATE", "content": "@file:files/docs/bulk-links.md"},
+    {"path": "CHANGELOG.md", "action": "MODIFY", "content": "@file:files/docs/CHANGELOG.md"}
+  ]
+}

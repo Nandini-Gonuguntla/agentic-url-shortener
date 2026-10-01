@@ -1,0 +1,52 @@
+{
+  "title": "Safer short links (draft, needs clarification)",
+  "summary": "The request asks to make short links safer for people who click them, but does not say which threat matters or how unsafe links should be handled. Short links hide their destination, so the likely concerns are deceptive destinations, guessable codes and abusive link creation; each leads to a different design.",
+  "changeType": "ENHANCEMENT",
+  "functionalRequirements": [
+    "Prevent or mitigate harm to people who follow short links (threat to be confirmed)"
+  ],
+  "nonFunctionalRequirements": [
+    "Must not slow down the redirect hot path"
+  ],
+  "acceptanceCriteria": [
+    {"id": "AC1", "description": "Links identified as unsafe are handled according to the agreed policy (to be confirmed)"}
+  ],
+  "assumptions": [
+    "Codes are already random 7-character Base62 values from a CSPRNG, so enumeration is already mitigated",
+    "Link creation is already rate limited per client"
+  ],
+  "outOfScope": [],
+  "ambiguities": [
+    {
+      "id": "Q1",
+      "question": "Which threat should this change address first?",
+      "options": [
+        "Malicious or deceptive destination URLs (phishing, malware)",
+        "Guessable or enumerable short codes",
+        "Spam and abusive link creation"
+      ],
+      "recommendedOption": "Malicious or deceptive destination URLs (phishing, malware)",
+      "blocking": true,
+      "impact": "Determines whether we validate destinations, change code generation, or extend abuse controls"
+    },
+    {
+      "id": "Q2",
+      "question": "What should happen when a destination is considered unsafe?",
+      "options": [
+        "Reject the link at creation time with a clear error",
+        "Allow creation but show a warning page before redirecting"
+      ],
+      "recommendedOption": "Reject the link at creation time with a clear error",
+      "blocking": true,
+      "impact": "Creation-time rejection is an API change; an interstitial is a redirect-path and UI change"
+    },
+    {
+      "id": "Q3",
+      "question": "Where should the list of unsafe domains come from?",
+      "options": ["Static configuration", "External reputation service"],
+      "recommendedOption": "Static configuration",
+      "blocking": false,
+      "impact": "An external service adds a network dependency on the create path; assume configuration for now"
+    }
+  ]
+}

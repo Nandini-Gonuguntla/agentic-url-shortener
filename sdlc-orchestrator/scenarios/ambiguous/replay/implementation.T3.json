@@ -1,0 +1,9 @@
+{
+  "taskId": "T3",
+  "summary": "Unit and API tests for destination safety",
+  "changes": [
+    {"path": "src/test/java/com/agentic/shortener/service/DestinationSafetyPolicyTest.java", "action": "CREATE", "content": "@file:files/T3/DestinationSafetyPolicyTest.java"},
+    {"path": "src/test/java/com/agentic/shortener/api/UnsafeDestinationApiTest.java", "action": "CREATE", "content": "@file:files/T3/UnsafeDestinationApiTest.java"}
+  ],
+  "notes": "Each threat-model mitigation has at least one test."
+}

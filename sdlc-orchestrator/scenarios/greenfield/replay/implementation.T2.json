@@ -1,0 +1,10 @@
+{
+  "taskId": "T2",
+  "summary": "Add POST /api/v1/links/bulk with request/response DTOs",
+  "changes": [
+    {"path": "src/main/java/com/agentic/shortener/api/BulkCreateLinksRequest.java", "action": "CREATE", "content": "@file:files/T2/BulkCreateLinksRequest.java"},
+    {"path": "src/main/java/com/agentic/shortener/api/BulkCreateLinksResponse.java", "action": "CREATE", "content": "@file:files/T2/BulkCreateLinksResponse.java"},
+    {"path": "src/main/java/com/agentic/shortener/api/BulkLinkController.java", "action": "CREATE", "content": "@file:files/T2/BulkLinkController.java"}
+  ],
+  "notes": "Items are deliberately not @Valid-ated individually: per-item problems must become per-item results, not a 400 for the whole batch."
+}

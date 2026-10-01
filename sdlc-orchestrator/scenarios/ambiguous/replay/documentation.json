@@ -1,0 +1,7 @@
+{
+  "summary": "Document destination safety checks and add a changelog entry",
+  "changes": [
+    {"path": "docs/destination-safety.md", "action": "CREATE", "content": "@file:files/docs/destination-safety.md"},
+    {"path": "CHANGELOG.md", "action": "MODIFY", "content": "@file:files/docs/CHANGELOG.md"}
+  ]
+}

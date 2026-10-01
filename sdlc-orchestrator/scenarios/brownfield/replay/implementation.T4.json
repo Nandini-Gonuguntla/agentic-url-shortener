@@ -1,0 +1,9 @@
+{
+  "taskId": "T4",
+  "summary": "Expiry unit and integration tests with a controllable clock",
+  "changes": [
+    {"path": "src/test/java/com/agentic/shortener/domain/LinkTest.java", "action": "CREATE", "content": "@file:files/T4/LinkTest.java"},
+    {"path": "src/test/java/com/agentic/shortener/api/LinkExpiryIntegrationTest.java", "action": "CREATE", "content": "@file:files/T4/LinkExpiryIntegrationTest.java"}
+  ],
+  "notes": "The integration test warms the cache before advancing the clock, which is the scenario the design flagged as the main risk."
+}

@@ -1,0 +1,20 @@
+{
+  "summary": "Destination validation belongs on the create path. UrlValidator already performs syntactic checks (scheme, host, length, self-reference) and is shared by LinkService.create. Safety is a separate concern with its own configuration, so a new DestinationSafetyPolicy invoked from LinkService.create after syntactic validation keeps UrlValidator focused and its tests unchanged. Configuration lives under shortener.* in application.yml; a separate SafetyProperties record avoids changing the existing ShortenerProperties constructor that tests build directly. GlobalExceptionHandler maps domain exceptions to problem types.",
+  "impactedFiles": [
+    {"path": "src/main/java/com/agentic/shortener/config/SafetyProperties.java", "changeKind": "CREATE", "reason": "Typed configuration for the blocklist and IP-literal rule"},
+    {"path": "src/main/resources/application.yml", "changeKind": "MODIFY", "reason": "Default blocklist and rule settings"},
+    {"path": "src/main/java/com/agentic/shortener/service/DestinationSafetyPolicy.java", "changeKind": "CREATE", "reason": "The safety checks"},
+    {"path": "src/main/java/com/agentic/shortener/service/UnsafeDestinationException.java", "changeKind": "CREATE", "reason": "Domain signal for refused destinations"},
+    {"path": "src/main/java/com/agentic/shortener/service/LinkService.java", "changeKind": "MODIFY", "reason": "Invoke the policy on create"},
+    {"path": "src/main/java/com/agentic/shortener/api/GlobalExceptionHandler.java", "changeKind": "MODIFY", "reason": "Map to 422 urn:problem:unsafe-destination"}
+  ],
+  "impactedApis": ["POST /api/v1/links (new 422 response)"],
+  "dataFlows": [
+    "Create: LinkController -> LinkService.create -> UrlValidator.validate (syntax) -> DestinationSafetyPolicy.check (safety) -> insert, or UnsafeDestinationException -> 422"
+  ],
+  "architecturalNotes": [
+    "Redirect path is untouched, so redirect latency is unaffected",
+    "TestProperties builds ShortenerProperties directly; adding a component to that record would break existing tests",
+    "Exception messages must not echo the submitted URL, which may contain credentials"
+  ]
+}

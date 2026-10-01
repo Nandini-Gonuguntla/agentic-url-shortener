@@ -1,0 +1,24 @@
+{
+  "summary": "Expiry cuts through every layer of the create and redirect paths. The Link entity and schema need a nullable expires_at column (new Flyway V2; V1 is applied history). LinkService.create must compute expiresAt from the request TTL, and LinkService.resolve must enforce it. The redirect path is cache-first via LinkCache storing ResolvedLink, so ResolvedLink must carry expiresAt and the check must run after the cache lookup, not only on cache misses. GlobalExceptionHandler needs a 410 mapping, and the create/metadata DTOs need the new fields.",
+  "impactedFiles": [
+    {"path": "src/main/resources/db/migration/V2__add_link_expiry.sql", "changeKind": "CREATE", "reason": "Additive nullable column expires_at"},
+    {"path": "src/main/java/com/agentic/shortener/domain/Link.java", "changeKind": "MODIFY", "reason": "expiresAt field, constructor and isExpiredAt"},
+    {"path": "src/main/java/com/agentic/shortener/service/ResolvedLink.java", "changeKind": "MODIFY", "reason": "Cached redirect data must include expiresAt"},
+    {"path": "src/main/java/com/agentic/shortener/service/LinkService.java", "changeKind": "MODIFY", "reason": "TTL on create; expiry enforcement in resolve"},
+    {"path": "src/main/java/com/agentic/shortener/service/LinkExpiredException.java", "changeKind": "CREATE", "reason": "Domain signal for expired links"},
+    {"path": "src/main/java/com/agentic/shortener/api/GlobalExceptionHandler.java", "changeKind": "MODIFY", "reason": "Map LinkExpiredException to 410"},
+    {"path": "src/main/java/com/agentic/shortener/api/CreateLinkRequest.java", "changeKind": "MODIFY", "reason": "Optional expiresInSeconds with bounds"},
+    {"path": "src/main/java/com/agentic/shortener/api/LinkResponse.java", "changeKind": "MODIFY", "reason": "Expose expiresAt"},
+    {"path": "src/main/java/com/agentic/shortener/api/LinkController.java", "changeKind": "MODIFY", "reason": "Pass TTL to the service"}
+  ],
+  "impactedApis": ["POST /api/v1/links (new optional field)", "GET /api/v1/links/{code} (new field)", "GET /{code} (new 410 response)"],
+  "dataFlows": [
+    "Create: LinkController -> LinkService.create(url, alias, ttl) -> Link(expiresAt = now + ttl) -> link.expires_at",
+    "Redirect: RedirectController -> LinkService.resolve -> LinkCache.get (hit) or LinkRepository.findByCode (miss) -> expiry check -> 302 or LinkExpiredException -> 410"
+  ],
+  "architecturalNotes": [
+    "LinkCache entries live up to 10 minutes; caching the expiry instant (not an 'is expired' flag) keeps hits correct",
+    "Keep the existing two-argument LinkService.create for current callers (ConcurrentClickCountingTest) by delegating",
+    "Clock is injected everywhere, so expiry is testable with a controllable clock"
+  ]
+}

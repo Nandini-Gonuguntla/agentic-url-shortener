@@ -1,0 +1,8 @@
+{
+  "taskId": "T1",
+  "summary": "Add nullable expires_at column (V2 migration)",
+  "changes": [
+    {"path": "src/main/resources/db/migration/V2__add_link_expiry.sql", "action": "CREATE", "content": "@file:files/T1/V2__add_link_expiry.sql"}
+  ],
+  "notes": "Additive and nullable: the previous release keeps working against the new schema."
+}

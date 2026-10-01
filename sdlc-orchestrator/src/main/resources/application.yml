@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: sdlc-orchestrator
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+server:
+  port: 8090
+
+logging:
+  level:
+    com.agentic.orchestrator.engine.RunExecutor: WARN
+
+orchestrator:
+  # Blank = auto-detect the repository root by walking up from the working directory.
+  repo-root: ""
+  target-project: ""
+  scenarios-dir: ""
+  runs-dir: ""
+  maven-offline: true
+  # When set, POST/PUT /api/** require header X-Api-Token.
+  api-token: ""
+  llm:
+    mode: auto            # auto | live | replay
+    model: claude-opus-5-5
+    server-side-fallback: true
+  autonomy:
+    max-agent-invocations: 60
+    max-run-duration: 60m
+    max-rework-cycles: 2
+    approval-timeout: 30m
+    approval-risk-threshold: MEDIUM
+    max-files-per-change: 25
