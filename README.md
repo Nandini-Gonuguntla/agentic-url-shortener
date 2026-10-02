@@ -106,6 +106,26 @@ can be turned off with `orchestrator.llm.server-side-fallback=false`.
 ./mvnw -q -f sdlc-orchestrator/pom.xml test -Pe2e   # full pipeline for all three scenarios (about 2 min)
 ```
 
+## How this was built (AI usage)
+
+As encouraged in the brief, I built this with an AI coding assistant (Claude Code) as a pair
+programmer, the same way I would on the job. The project follows the principle it demonstrates:
+the AI did much of the typing; I set direction, made the calls and verified the result.
+
+- **Direction and decisions I owned:** the stack (Java 21 and Spring Boot), the scope, and the
+  trade-offs documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#6-key-decisions). The most
+  important one is that agents only propose changes and the engine applies them after policy gates
+  and approvals.
+- **What the AI generated:** most of the code, tests, recorded agent responses and documentation
+  drafts, iterated through review.
+- **How the output was verified, not trusted:** 73 unit and integration tests, plus end-to-end
+  runs of all three scenarios in which the generated code is compiled and tested by the real Maven
+  build. I also checked the pushed repository from a fresh clone. Bugs found this way were fixed:
+  a Windows `cmd.exe` path issue in the Maven runner, an H2 reserved word, a false positive in the
+  input-validation security check, and a `java.net.URI` edge case for numeric hosts.
+- **Inside the product, AI is governed the same way:** agents work within autonomy boundaries,
+  and every model call, gate decision and human approval lands in a tamper-evident audit trail.
+
 ## Documentation
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): components, orchestration model, control flow, key decisions
