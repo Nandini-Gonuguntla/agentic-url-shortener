@@ -1,0 +1,8 @@
+{
+  "id": "greenfield",
+  "title": "Bulk link creation API",
+  "type": "GREENFIELD",
+  "description": "New capability built from scratch as new components on top of the existing service. Shows decomposition into a task DAG, multi-step implementation, parallel validation branches and the mandatory release sign-off.",
+  "requirement": "Marketing needs to shorten many URLs at once for campaigns. Add a bulk endpoint that accepts up to 100 URLs (each with an optional custom alias) in one request and returns a result for every item, so that one bad URL does not fail the whole batch.",
+  "scriptedAnswers": {}
+}
