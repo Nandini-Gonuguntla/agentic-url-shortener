@@ -198,7 +198,8 @@ async function renderRun() {
       + groupQuestions(run.pendingQuestions);
   }
 
-  if (run.mermaid !== lastGraph) { lastGraph = run.mermaid; window.renderGraph && window.renderGraph(run.mermaid); }
+  // The graph library loads asynchronously; until it is ready, retry on the next refresh.
+  if (run.mermaid !== lastGraph && window.renderGraph) { lastGraph = run.mermaid; window.renderGraph(run.mermaid); }
 
   document.getElementById("stages").innerHTML = `<table><tr><th>Stage</th><th>Status</th><th>Agent</th><th>Runs</th><th>Gen</th><th>Last error</th></tr>
     ${run.stages.map(s => `<tr><td><a target="_blank" href="/api/runs/${run.runId}/artifacts/${s.id}">${s.id}</a>

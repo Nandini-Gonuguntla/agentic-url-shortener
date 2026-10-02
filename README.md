@@ -1,5 +1,7 @@
 # Agentic SDLC Orchestrator: URL Shortener
 
+[![CI](https://github.com/Nandini-Gonuguntla/agentic-url-shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/Nandini-Gonuguntla/agentic-url-shortener/actions/workflows/ci.yml)
+
 A working prototype that turns a requirement into a **reviewable engineering outcome**, meaning a
 tested patch, a PR description and an engineering summary, by running AI agents through a governed,
 stateful software delivery workflow. The system it builds on is a production-style URL shortener.
@@ -15,6 +17,44 @@ agentic-url-shortener/
 ```
 
 **Principle:** agents execute inside defined autonomy boundaries; humans own approvals and final quality.
+
+## See it working
+
+**Proof without cloning:** the CI badge above links to GitHub Actions, which on every push runs
+all 73 tests **and the three end-to-end scenarios**, including real builds of the code the agents
+produce. Each run's summary lists the scenario results. Its artifacts contain the generated
+`change.patch`, `PR_DESCRIPTION.md`, `ENGINEERING_SUMMARY.md` and the hash-chained audit log.
+
+**The brownfield scenario, run with a human approving each checkpoint in the dashboard:**
+
+A design checkpoint held for sign-off. The risk score explains why approval is needed.
+
+![Approval checkpoint](docs/images/dashboard-approval.jpg)
+
+The generated code failed its own new test (an expired link still redirected when cached). The
+engine rolled the workspace back and sent the failure to the implementation agent. The second
+attempt passed.
+
+![Rework after a failing test](docs/images/dashboard-rework.jpg)
+
+The run completed. `migration-safety` was inserted by re-planning because the design changes the schema.
+
+![Run succeeded](docs/images/dashboard-run-succeeded.jpg)
+
+```mermaid
+flowchart LR
+  requirements --> analysis[codebase-analysis] --> design --> plan --> implementation
+  requirements --> design
+  implementation --> validation & security[security-review] & docs[documentation] & migration[migration-safety]
+  validation & security & docs & migration --> release[release-readiness] --> publish
+  validation -. "rework: 1 test failed" .-> implementation
+  classDef human fill:#e9d8fd,stroke:#6b46c1
+  classDef inserted fill:#fefcbf,stroke:#b7791f
+  class design,implementation,release human
+  class migration inserted
+```
+
+Purple nodes paused for a human decision; the yellow node was added at run time by the replanner.
 
 ## What it demonstrates
 
