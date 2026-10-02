@@ -112,7 +112,7 @@ As encouraged in the brief, I built this with an AI coding assistant (Claude Cod
 programmer, the same way I would on the job. The project follows the principle it demonstrates:
 the AI did much of the typing; I set direction, made the calls and verified the result.
 
-- **Direction and decisions I owned:** the stack (Java 21 and Spring Boot), the scope, and the
+- **Direction and decisions I owned:** the stack Java 21 and Spring Boot, the scope, and the
   trade-offs documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#6-key-decisions). The most
   important one is that agents only propose changes and the engine applies them after policy gates
   and approvals.
